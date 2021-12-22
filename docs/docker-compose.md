@@ -2,6 +2,8 @@
 
 * Add a new service in docker-compose.yml
 
+For normal
+
 ```yaml
 version: '2'
 services:
@@ -17,11 +19,45 @@ services:
      - ./openvpn-data/conf:/etc/openvpn
 ```
 
+For static IP address
+
+```
+version: '2'
+services:
+  openvpn:
+    cap_add:
+     - NET_ADMIN
+    image: osxdk/ovpn:aarch64
+    container_name: openvpn
+    ports:
+     - "1579:1194/udp"
+    networks:
+      vpcbr:
+        ipv4_address: 172.20.0.10
+    restart: always
+    volumes:
+     - ./openvpn-data/conf:/etc/openvpn
+networks:
+  vpcbr:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+          gateway: 172.20.0.1
+```
+
 
 * Initialize the configuration files and certificates
 
 ```bash
 docker-compose run --rm openvpn ovpn_genconfig -u udp://VPN.SERVERNAME.COM
+docker-compose run --rm openvpn ovpn_initpki
+```
+
+* Incase route IP
+
+```
+docker-compose run --rm openvpn ovpn_genconfig -N -d -n 192.168.1.x -u udp://VPN.SERVERNAME.COM -p "dhcp-option DOMAIN VPN.SERVERNAME.COM" -p "route 192.168.1.0 255.255.255.0" -p "route 172.20.0.0 255.255.0.0"
 docker-compose run --rm openvpn ovpn_initpki
 ```
 
